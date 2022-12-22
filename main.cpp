@@ -1,3 +1,12 @@
+/*
+******************************
+TERCERA PRACTICA CALIFICADA
+ - Cisneros Condori, Gloria Stephany
+ - Valdivia Quispe, Christian Guillermo Aturo
+Fecha: XX/12/2022   Hora:
+******************************
+*/
+
 #include <GL/glut.h>
 #include<stdlib.h>
 #include<stdio.h>
@@ -7,8 +16,10 @@
 using namespace std;
 
 //Variables globales
-int SCREEN_HEIGHT =480; int numeroPuntos=0;
+int SCREEN_WIDTH = 900;
+int SCREEN_HEIGHT =700; int numeroPuntos=0;
 int M=0;
+GLint mover=0, pos=0; //Variables para mover los puntos
 
 //Variables globales para el funcionamiento de los Menus
 GLint modelo=0;
@@ -17,6 +28,7 @@ GLint puntosMover=0;
 GLint curvas=0;
 GLint linea=0;
 GLint puntosMostrar=0;
+GLint modeloPuntosMover=0;
 
 //Prototipos de funcion
 void init(void);
@@ -28,8 +40,10 @@ void graficaCurvaB_Spline(void);
 float CurvaB_Spline(float,int, int , int );
 void dibujarEjes(void);
 void lineas(void);
-void introducirClic(int , int , int , int );
-void ejecutor(void);
+void introducirClickMostrar(int,int,int,int);
+void introducirClickMover(int,int,int,int);
+void moverPuntos(int,int);
+void motion(int,int);
 void modelo1(bool);void modelo2(bool);void modelo3(bool);void modelo4(bool);void modelo5(bool);
 
 //Menus
@@ -56,9 +70,9 @@ Point abc[4];
 int main (int argc, char*argv[]){
  	glutInit(&argc, argv);
  	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
- 	glutInitWindowSize(640,SCREEN_HEIGHT);
+ 	glutInitWindowSize(SCREEN_WIDTH,SCREEN_HEIGHT);
  	glutInitWindowPosition(500,150);
- 	glutCreateWindow("Curva del Senior Bezier");
+ 	glutCreateWindow("PC-03 | CURVA B-SPLINE by Cisneros & Valdivia");
  	////SubMenu////
  	int subMenuPuntosControl = glutCreateMenu(menuPuntosdeControl);
         glutAddMenuEntry("Activado",1);
@@ -93,6 +107,7 @@ int main (int argc, char*argv[]){
  	init();
  	glutReshapeFunc(reshape);
  	glutDisplayFunc(display);
+ 	glutMotionFunc(motion);
  	glEnable(GL_DEPTH_TEST);
  	glutMainLoop();
  	return 0;
@@ -121,7 +136,7 @@ void reshape(int w, int h) {
  	glViewport(0,0,(GLsizei)w, (GLsizei)h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluOrtho2D(0.0, 640.0,0.0,480.0);
+    gluOrtho2D(0.0, SCREEN_WIDTH,0.0,SCREEN_HEIGHT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
@@ -129,9 +144,9 @@ void reshape(int w, int h) {
 //Funciones que se pasa como parametro un booleano para poder hacer
 //funcionales las opciones de activado y desactivado en los menus
 void modelo1(bool band){
-    if(band){glutMouseFunc(introducirClic);}
+    if(band){glutMouseFunc(introducirClickMostrar);}
     glPointSize(6);
-    graficaPuntosBezier();
+        graficaPuntosBezier();
 }
 
 void modelo2(bool state){
@@ -149,10 +164,8 @@ void modelo3(bool state){
             graficaCurvaB_Spline();
 }
 
-void modelo4(bool state){
-    if(state){
-
-    }
+void modelo4(bool band){
+    if(band){glutMouseFunc(introducirClickMover);}
 }
 
 void modelo5(bool state){
@@ -162,18 +175,24 @@ void modelo5(bool state){
     }
 }
 
-/***Esta funcion nos permitira establecer en que parte de
-    la ventana se estara dando click con el mouse***/
-void introducirClic(int boton, int state, int x, int y){
+/***EstaS funciones nos permitiran establecer en que parte de
+    la ventana se estara dando click con el mouse para luego
+    realizar las acciones correspondientes***/
+void introducirClickMostrar(int boton, int state, int x, int y){
     if(boton==GLUT_LEFT_BUTTON && state == GLUT_DOWN && puntosMostrar==1){
         abc[numeroPuntos].axyz((float)x,(float)(SCREEN_HEIGHT -y));
  	 	numeroPuntos++;
- 	 	cout<<x<<" - "<<y<<endl;
- 	 	//glColor3f(0.0,0.0,1.0);
+ 	}
+
+}
+
+void introducirClickMover(int boton,int state,int x,int y){
+    if(boton==GLUT_LEFT_BUTTON && state == GLUT_DOWN && puntosMover==1){
+ 	 	moverPuntos(x,SCREEN_HEIGHT - y);
  	}
 }
-/********************/
-/***Funciones para graficar los puntos y unirlos***/
+
+/***Funciones para graficar los puntos y unirlos con lineas***/
 void graficaPuntosBezier(void){
     float x,y;
     glBegin(GL_POINTS);
@@ -182,7 +201,6 @@ void graficaPuntosBezier(void){
         x=abc[i].x;
         y=abc[i].y;
         glVertex2f(x,y);
-        cout<<x<<" - "<<y<<endl;
     }
     glEnd();
 }
@@ -209,9 +227,7 @@ void graficaCurvaB_Spline(void){
     for(int i=M;i<=numeroPuntos-4;i++){
         for(float u=0.0;u<=1;u+=0.01){
             x=CurvaB_Spline(u,0, i, i+4);
-            //cout<<"//X "<<endl;
             y=CurvaB_Spline(u,1,i, i+4);
-            //cout<<"//Y "<<endl;
             glVertex2f(x,y);
         }
     }
@@ -243,38 +259,42 @@ float CurvaB_Spline(float u,int coordenada, int p, int q){
     return suma;
 }
 
+/********************/
+void moverPuntos(int x, int y){
+    for(int i=0; i<numeroPuntos; i++){
+        cout << "mousebutton2. x:" << x << ", y2:" << y << " \n";
+        cout<<"raaaaaaa "<<abc[i].x<<" - "<<abc[i].y<<endl;
+        if(x<=abc[i].x+5 && x>=abc[i].x-5 && y<=abc[i].y+5 && y>=abc[i].y-5){
+            mover=1;
+            pos=i;
+            cout<<"bota tu gaaaaaa: mover: "<<mover<<endl;
+            i=numeroPuntos;
+        }else{
+            mover=0;
+            pos=i;
+            cout<<"bota tu raaaaaa: mover: "<<mover<<endl;
+        }
+    }
+}
+
+void motion(int x, int y){
+    cout<<"El mover es: "<<mover<<endl;
+    if(mover==1){
+        cout<<"ya noooooo"<<endl;
+        abc[pos].x = float(x);
+        abc[pos].y = float(SCREEN_HEIGHT - y);
+    }
+}
+
 /***Funcion para graficar el eje de coordenadas***/
 void dibujarEjes(void){
     glBegin(GL_LINES);
-        glVertex2f(0,240);
-        glVertex2f(640,240);
-        glVertex2f(320,0);
-        glVertex2f(320,480);
+        glVertex2f(0,SCREEN_HEIGHT/2);
+        glVertex2f(SCREEN_WIDTH,SCREEN_HEIGHT/2);
+        glVertex2f(SCREEN_WIDTH/2,0);
+        glVertex2f(SCREEN_WIDTH/2,SCREEN_HEIGHT);
     glEnd();
 }
-
-/********************/
-
-/*void ejecutor(void){
-    glClear(GL_COLOR_BUFFER_BIT);
-    // salva el estado actual de la matriz
-    glPushMatrix();
-    dibujarEjes();
-    if (numeroPuntos==6){
-        glPointSize(5);
-        glColor3f(0.0,0.0,1.0);
-        cout<<numeroPuntos<<endl;
-        graficaPuntosBezier();
-        glColor3f(0.0,1.0,0.0);
-        graficaCurvaB_Spline();
-        lineas_good();
-        //graficaCurvaBezier();
-        numeroPuntos=0;
-    }
-    glPopMatrix();
-    // reecupera el estado del matriz
-    glFlush();
-}*/
 
 /***Funciones para los menus***/
 void menuEjeCoordenadas(int opc){
@@ -286,7 +306,7 @@ void menuEjeCoordenadas(int opc){
 
 void menuMoverPuntos(int opc){
     switch(opc){
-        case 1: puntosMover=1; modelo4(true); break;
+        case 1: puntosMover=1; modelo4(true);  break;
         case 2: puntosMover=2; modelo4(false); break;
     }
 }
