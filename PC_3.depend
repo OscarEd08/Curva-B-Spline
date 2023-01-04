@@ -17,11 +17,10 @@
 832394118 c:\program files\codeblocks\glut\include\gl\glu.h
 	<GL/gl.h>
 
-1671725802 source:f:\.files_code\glut\gloriam\practica-calificada-3\main.cpp
+1671761345 source:f:\.files_code\glut\gloriam\practica-calificada-3\main.cpp
 	<GL/glut.h>
 	<stdlib.h>
 	<stdio.h>
 	<windows.h>
 	<math.h>
-	<iostream>
 
